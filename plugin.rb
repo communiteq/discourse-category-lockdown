@@ -124,7 +124,7 @@ after_initialize do
       if request.format.json?
         render_json_dump(response, status: 402)
       else
-        redirect_to path(response[:redirect_url]), status: :moved_permanently
+        redirect_to path(response[:redirect_url]), status: :moved_permanently, allow_other_host: true
       end
 
     end
