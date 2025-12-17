@@ -6,28 +6,30 @@ const PLUGIN_ID = "discourse-category-lockdown";
 function initializeLockdown(api) {
   // Intercept any HTTP 402 (Payment Required) responses for topics
   // And redirect the client accordingly
-  api.modifyClass("model:post-stream", {
-    pluginId: PLUGIN_ID,
-    errorLoading(result) {
-      const status = result.jqXHR.status;
-      let response = result.jqXHR.responseJSON;
-      if (status === 402) {
-        let redirectURL =
-          response.redirect_url ||
-          this.siteSettings.category_lockdown_redirect_url;
 
+  const siteSettings = api.container.lookup("service:site-settings");
+  api.registerBehaviorTransformer(
+    "post-stream-error-loading",
+    ({ next, context }) => {
+      const status = context.error.jqXHR.status;
+      let response = context.error.jqXHR.responseJSON;
+
+      if (status === 402) {
+        let redirectURL = response.redirect_url ||
+          siteSettings.category_lockdown_redirect_url;
         const external = redirectURL.startsWith("http");
         if (external) {
           // Use location.replace so that the user can go back in one click
           document.location.replace(redirectURL);
+          return;
         } else {
           // Handle the redirect inside ember
           return DiscourseURL.handleURL(redirectURL, { replaceURL: true });
         }
       }
-      return this._super();
-    },
-  });
+      next();
+    }
+  );
 
   api.registerValueTransformer("topic-list-item-class",
     ({value, context}) => {
