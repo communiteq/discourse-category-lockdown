@@ -40,32 +40,34 @@ function initializeLockdown(api) {
     }
   );
 
-  // Warning: "route:docs-index" may not be found if the 'discourse-docs' plugin is not installed. This is expected and harmless.
-  api.modifyClass("route:docs-index", {
-    pluginId: PLUGIN_ID,
-    model(params, transition) {
-      return this._super(params).catch((error) => {
-        let response = error.jqXHR.responseJSON;
-        const status = error.jqXHR.status;
-        if (status === 402) {
-          // abort the transition to prevent momentary error
-          // from being displayed
-          transition.abort();
-          let redirectURL =
-            response.redirect_url ||
-            this.siteSettings.category_lockdown_redirect_url;
+  if (api.container.factoryFor("route:docs-index")) {
+    api.modifyClass("route:docs-index", {
+      pluginId: PLUGIN_ID,
+      model(params, transition) {
+        return this._super(params).catch((error) => {
+          let response = error.jqXHR.responseJSON;
+          const status = error.jqXHR.status;
+          if (status === 402) {
+            // abort the transition to prevent momentary error
+            // from being displayed
+            transition.abort();
+            let redirectURL =
+              response.redirect_url ||
+              this.siteSettings.category_lockdown_redirect_url;
 
-          const external = redirectURL.startsWith("http");
-          if (external) {
-            document.location.href = redirectURL;
-          } else {
-            // Handle the redirect inside ember
-            return DiscourseURL.handleURL(redirectURL, { replaceURL: true });
+            const external = redirectURL.startsWith("http");
+            if (external) {
+              document.location.href = redirectURL;
+            } else {
+              // Handle the redirect inside ember
+              return DiscourseURL.handleURL(redirectURL, { replaceURL: true });
+            }
           }
-        }
-      });
-    },
-  });
+        });
+      },
+    });
+  }
+
 }
 
 export default {
